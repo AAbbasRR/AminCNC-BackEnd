@@ -1,0 +1,31 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style type="text/css">
+        .submit-row .default {
+            background: #4BB543 !important;
+        }
+
+        .submit-row .default:hover {
+            background: #4B9543 !important;
+        }
+
+        .required::after {
+            content: " * " !important;
+            color: red !important;
+        }
+
+        .help {
+            display: flex !important;
+            align-items: center !important;
+            font-weight: bold !important;
+            color: deepskyblue !important;
+        }
+
+        .help::before {
+            content: url("{% static 'admin/img/icon-unknown.svg' %}");
+        }
+    </style>
+{% endblock %}

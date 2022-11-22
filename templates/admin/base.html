@@ -1,0 +1,57 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+    <style type="text/css">
+        .app-app_Orders > table > tbody > tr > th > a {
+            position: relative !important;
+        }
+
+        .app-app_Orders > table > tbody > tr > th > a::after {
+            content: "{{ order_count }}" !important;
+            background: darkseagreen;
+            color: white;
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            padding: 1px 5px;
+            top: -7px;
+            right: 100%;
+        }
+    </style>
+{% endblock %}
+
+{% block header %}
+    <div id="header">
+        <div id="branding">
+            {% block branding %}{% endblock %}
+        </div>
+        {% block usertools %}
+            {% if has_permission %}
+                <div id="user-tools">
+                    {% block userlinks %}
+                        {% if site_url %}
+                            <a href="{{ site_url }}">{% translate 'View site' %}</a> /
+                        {% endif %}
+                        {% if user.is_active and user.is_staff %}
+                            {% url 'django-admindocs-docroot' as docsroot %}
+                            {% if docsroot %}
+                                <a href="{{ docsroot }}">{% translate 'Documentation' %}</a> /
+                            {% endif %}
+                        {% endif %}
+                        {% if user.has_usable_password %}
+                            <a href="{% url 'admin:password_change' %}">{% translate 'Change password' %}</a> /
+                        {% endif %}
+                        <form id="logout-form" method="post" action="{% url 'admin:logout' %}">
+                            {% csrf_token %}
+                            <button type="submit">{% translate 'Log out' %}</button>
+                        </form>
+                    {% endblock %}
+                </div>
+            {% endif %}
+        {% endblock %}
+        {% block nav-global %}{% endblock %}
+    </div>
+{% endblock %}
