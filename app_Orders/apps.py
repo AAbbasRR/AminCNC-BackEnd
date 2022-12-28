@@ -6,3 +6,6 @@ class AppOrdersConfig(AppConfig):
     name = 'app_Orders'
     verbose_name = "سفارش"
     verbose_name_plural = "سفارشات"
+
+    def ready(self):
+        import app_Orders.signals

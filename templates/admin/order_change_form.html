@@ -1,0 +1,15 @@
+{% extends "./change_form.html" %}
+
+{% block submit_buttons_bottom %}
+    {% if original.status != "SUC" and original.status != "CNS" %}
+        <div class="submit-row">
+            {% if perms.app_Orders.can_confirm_order and original.status == "AWC" %}
+                <input class="default" type="submit" value="ذخیره و تایید اولیه" name="_confirm-order">
+            {% endif %}
+            {% if original.status == "PRE" %}
+                <input class="default" type="submit" value="تحویل و ارسال سفارش به گیرنده" name="_success-order">
+            {% endif %}
+            <input class="errorColor" type="submit" value="کنسل کردن سفارش" name="_cancel-order">
+        </div>
+    {% endif %}
+{% endblock %}

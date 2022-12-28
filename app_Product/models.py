@@ -1,3 +1,5 @@
+from contextlib import nullcontext
+
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
@@ -5,11 +7,14 @@ from django.utils.html import mark_safe
 
 from app_Material.models import Size, Material
 
+import uuid
+
 
 class Discount(models.Model):
     class Meta:
         verbose_name = "تخفیف"
         verbose_name_plural = f"{verbose_name} ها"
+        ordering = ['number']
 
     number = models.IntegerField(
         validators=[MinValueValidator(0)],
@@ -51,10 +56,29 @@ class Delivery_mode(models.Model):
         return self.mode_name
 
 
+class ProductPreparationTime(models.Model):
+    class Meta:
+        verbose_name = "زمان تحویل محصول"
+        verbose_name_plural = f"{verbose_name}ات"
+
+    number = models.IntegerField(
+        null=False,
+        verbose_name=' تعداد محصول'
+    )
+    preparation_time = models.IntegerField(
+        null=False,
+        verbose_name='زمان آماده سازی(روز کاری)'
+    )
+
+    def __str__(self) -> str:
+        return f"{self.preparation_time} روز کاری برای آماده سازی {self.number} تعداد محصول"
+
+
 class Product(models.Model):
     class Meta:
         verbose_name = "محصول"
         verbose_name_plural = f"{verbose_name}ات"
+        ordering = ['-created_date']
 
     name = models.CharField(
         max_length=25,
@@ -62,12 +86,26 @@ class Product(models.Model):
         blank=False,
         verbose_name='نام محصول'
     )
+    productId = models.CharField(
+        max_length=12,
+        default=str(uuid.uuid4()).split('-')[-1],
+        unique=True,
+        null=False,
+        blank=False,
+        verbose_name='کد رهگیری'
+    )
     slug = models.SlugField(
         max_length=100,
         unique=True,
         null=False,
         blank=False,
         verbose_name='لینک انگلیسی'
+    )
+    preparation_time = models.ForeignKey(
+        ProductPreparationTime,
+        on_delete=models.SET_NULL,
+        null=True,
+        verbose_name='زمان آماده سازی'
     )
     created_date = models.DateTimeField(
         default=timezone.now,
@@ -91,15 +129,14 @@ class Product(models.Model):
         through='MaterialModel',
         verbose_name='جنس-سایز-قیمت'
     )
-    delivery_modes = models.ManyToManyField(
-        Delivery_mode,
-        related_name='product_delivery_mode',
-        verbose_name='انواع ارسال'
-    )
     discounts = models.ManyToManyField(
         Discount,
         related_name='product_discounts',
         verbose_name='تخفیف ها'
+    )
+    show_in_index = models.BooleanField(
+        default=False,
+        verbose_name="نمایش در صفحه اصلی سایت"
     )
 
     def __str__(self) -> str:

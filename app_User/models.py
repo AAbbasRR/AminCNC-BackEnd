@@ -140,6 +140,7 @@ class Address(models.Model):
     )
     receiver_mobile_number = models.CharField(
         max_length=11,
+        null=False,
         validators=[PHONE_NUMBER_REGEX_VALIDATOR],
         verbose_name='شماره موبایل گیرنده'
     )

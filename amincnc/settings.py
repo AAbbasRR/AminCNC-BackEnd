@@ -1,4 +1,5 @@
 from pathlib import Path
+from decouple import config
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -22,6 +23,7 @@ INSTALLED_APPS = [
     # 3rd party apps
     'corsheaders',
     'rest_framework',
+    'rest_framework.authtoken',
     'jalali_date',
 
     # My apps
@@ -30,6 +32,8 @@ INSTALLED_APPS = [
     'app_Material',
     'app_Product',
     'app_Orders',
+    'app_Frequently_Question',
+    'app_NewSletter',
 ]
 
 MIDDLEWARE = [
@@ -98,7 +102,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'fa-ir'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Tehran'
 
 USE_I18N = True
 
@@ -141,3 +145,24 @@ JALALI_DATE_DEFAULTS = {
         }
     },
 }
+
+# django rest framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',  # <-- And here
+    ],
+}
+
+# Redis Setup
+Redis_host = config('Redis_Host')  # 'localhost' #'redis_sr' #
+Redis_port = config('Redis_port', cast=int)
+Redis_db = config('Redis_db', cast=int)
+
+# sms portal
+SMS_PORTAL = {
+    "username": config('SMS_portal_username'),
+    "pass": config('SMS_portal_pass'),
+}
+
+# Expire times
+SMS_VERIFICATION_TIME_EXPIRE = 120

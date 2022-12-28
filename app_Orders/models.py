@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils import timezone
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 
 from app_User.models import Address
 from app_Product.models import Delivery_mode, MaterialModel
@@ -37,11 +39,18 @@ class Orders(models.Model):
         blank=False,
         verbose_name='تاریخ ثبت سفارش'
     )
-    delivery_status = models.BooleanField(
-        default=False,
+    status_choices = [
+        ('CNS', 'لغو شده'),
+        ('SUC', 'تحویل داده شده'),
+        ('AWC', 'در انتظار تایید'),
+        ('PRE', 'در حال آماده سازی'),
+    ]
+    status = models.CharField(
+        max_length=3,
+        choices=status_choices,
         null=False,
-        blank=False,
-        verbose_name='وضعیت ارسال'
+        default='AWC',
+        verbose_name='وضعیت'
     )
     tracking_code = models.CharField(
         max_length=12,
@@ -57,6 +66,21 @@ class Orders(models.Model):
         on_delete=models.CASCADE,
         verbose_name='نوع ارسال'
     )
+    description = models.TextField(
+        null=True,
+        default='خالی',
+        verbose_name='توضیحات کاربر قبل از انجام سفارش'
+    )
+    admin_description = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name='توضیحات ادمین'
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        content_type = ContentType.objects.get_for_model(Orders)
+        Permission.objects.get_or_create(codename='can_confirm_order', name='Can Confirm Order', content_type=content_type)
 
     def __str__(self) -> str:
         return f"{self.user_and_address.user.mobile_number} - {self.tracking_code} - {self.total_price}"
@@ -92,3 +116,18 @@ class ProductsModel(models.Model):
         default=0,
         verbose_name="جمع قیمت(تومان)"
     )
+    payable_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=0,
+        default=0,
+        verbose_name="جمع قیمت قابل پرداخت(تومان)"
+    )
+    discount_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=0,
+        default=0,
+        verbose_name="مبلغ تخفیف خورده"
+    )
+
+    def __str__(self) -> str:
+        return f"product {self.order.pk} - {self.product.pk}"

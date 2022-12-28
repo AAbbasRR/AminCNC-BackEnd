@@ -5,18 +5,21 @@ from jalali_date.admin import ModelAdminJalaliMixin
 
 from app_Settings.admin import admin_site
 
-from .models import Discount, Delivery_mode, Product, Picture, MaterialModel
+from .models import Discount, Delivery_mode, Product, Picture, MaterialModel, ProductPreparationTime
 from .forms import ProductChangeForm
 
 
 class ProductImageAdmin(admin.TabularInline):
     model = Picture
     extra = 0
+    min_num = 1
+    max_num = 5
 
 
 class ProductMaterialAdmin(admin.TabularInline):
     model = MaterialModel
     extra = 0
+    min_num = 1
 
 
 class ProductAdmin(ModelAdminJalaliMixin, admin.ModelAdmin):
@@ -24,13 +27,13 @@ class ProductAdmin(ModelAdminJalaliMixin, admin.ModelAdmin):
     change_form_template = 'admin/change_form.html'
     fieldsets = [
         (None, {
-            'fields': (('name', 'slug'),)
+            'fields': (('name', 'slug'), ('show_in_index'))
         }),
         ('توضیحات', {
             'fields': ('short_description', 'description')
         }),
         ('تنظیمات', {
-            'fields': (('delivery_modes', 'discounts'),)
+            'fields': ('discounts', 'preparation_time')
         })
     ]
     list_display = (
@@ -38,7 +41,8 @@ class ProductAdmin(ModelAdminJalaliMixin, admin.ModelAdmin):
         'slug',
         'get_jalali_created_date',
         'short_description',
-        'product_picture'
+        'product_picture',
+        'show_in_index'
     )
     search_fields = (
         'name',
@@ -95,3 +99,4 @@ class DeliveryAdmin(admin.ModelAdmin):
 admin_site.register(Product, ProductAdmin)
 admin_site.register(Discount, DiscountAdmin)
 admin_site.register(Delivery_mode, DeliveryAdmin)
+admin_site.register(ProductPreparationTime)
