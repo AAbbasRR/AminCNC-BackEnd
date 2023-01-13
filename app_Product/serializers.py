@@ -2,7 +2,7 @@ from django.db.models import Min
 
 from rest_framework import serializers
 
-from .models import Discount, Product, MaterialModel, Picture, Delivery_mode, ProductPreparationTime
+from .models import Discount, Categories, Product, MaterialModel, Picture, Delivery_mode, ProductPreparationTime
 
 
 class DiscountSerializer(serializers.ModelSerializer):
@@ -148,6 +148,16 @@ class ProductSerializer(serializers.ModelSerializer):
         protocol = protocol.replace("http", "http") if protocol.split(":")[0] == "http" else protocol
         website_url = protocol + host
         return website_url + image.picture.url
+
+
+class CategoriesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Categories
+        fields = (
+            'name',
+            'slug',
+            'location',
+        )
 
 
 class DeliveryModeListSerializer(serializers.ModelSerializer):

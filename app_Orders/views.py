@@ -2,7 +2,7 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .serializers import SubmitOrderSerializer, EditDescriptionOrderSerializer, OrderHistorySerializer
+from .serializers import SubmitOrderSerializer, CheckPaymentFactorOrderSerializer, EditDescriptionOrderSerializer, OrderHistorySerializer
 from .models import Orders
 
 
@@ -13,10 +13,28 @@ class SubmitOrderView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         ser = self.serializer_class(data=self.request.data, context={"request": request})
         if ser.is_valid(raise_exception=True):
-            ser.save()
             return Response({
                 'status': True,
                 'result': ser.validated_data
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                "status": False,
+                "message": ser.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CheckPaymentFactorOrderView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated, ]
+    serializer_class = CheckPaymentFactorOrderSerializer
+
+    def post(self, request, *args, **kwargs):
+        ser = self.serializer_class(data=self.request.data, context={"request": request})
+        if ser.is_valid(raise_exception=True):
+            ser = ser.save()
+            return Response({
+                'status': True,
+                'result': ser
             }, status=status.HTTP_200_OK)
         else:
             return Response({

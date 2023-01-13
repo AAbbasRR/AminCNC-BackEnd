@@ -5,11 +5,12 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-x!j7pg#nf&me_t1fkrw0l2+*+j-^0x^tt)26=jxn#gwoy*wciq'
+SECRET_KEY = config('Secret_Key')
 
-DEBUG = True
+DEBUG = config('Debug_Status', cast=bool)
 
 ALLOWED_HOSTS = ['*']
+FRONT_SITE_DOMAIN = config('Front_Site_Domain')
 
 # Application definition
 INSTALLED_APPS = [
@@ -34,6 +35,7 @@ INSTALLED_APPS = [
     'app_Orders',
     'app_Frequently_Question',
     'app_NewSletter',
+    'app_History',
 ]
 
 MIDDLEWARE = [
@@ -77,11 +79,11 @@ WSGI_APPLICATION = 'amincnc.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'amincnc',
-        'USER': 'root',
-        'PASSWORD': 'A1b3@8s0a1b3@8s0',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': config('MySQL_Name'),
+        'USER': config('MySQL_User'),
+        'PASSWORD': config('MySQL_Pass'),
+        'HOST': config('MySQL_Host'),
+        'PORT': config('MySQL_Port'),
     }
 }
 
@@ -162,6 +164,10 @@ Redis_db = config('Redis_db', cast=int)
 SMS_PORTAL = {
     "username": config('SMS_portal_username'),
     "pass": config('SMS_portal_pass'),
+}
+
+ZARINPAL_PORTAL = {
+    "authID": config('Zarinpal_portal_id'),
 }
 
 # Expire times

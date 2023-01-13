@@ -74,6 +74,47 @@ class ProductPreparationTime(models.Model):
         return f"{self.preparation_time} روز کاری برای آماده سازی {self.number} تعداد محصول"
 
 
+class Categories(models.Model):
+    class Meta:
+        verbose_name = "دسته بندی"
+        verbose_name_plural = "دسته بندی ها"
+
+    name = models.CharField(
+        max_length=25,
+        null=False,
+        blank=False,
+        verbose_name='نام'
+    )
+    slug = models.SlugField(
+        max_length=100,
+        unique=True,
+        null=False,
+        blank=False,
+        verbose_name='لینک'
+    )
+    description = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name='توضیحات'
+    )
+    location_choices = [
+        ('VTP', 'بزرگ عمودی'),
+        ('HTP', 'بزرگ افقی'),
+        ('DOP', 'دو عکس هم اندازه(اولی)'),
+        ('DTP', 'دو عکس هم اندازه(دومی)'),
+    ]
+    location = models.CharField(
+        max_length=3,
+        choices=location_choices,
+        null=False,
+        unique=True,
+        verbose_name='مکان دسته در صفحه اصلی با کاور'
+    )
+
+    def __str__(self) -> str:
+        return f"{self.name} - {self.slug}"
+
+
 class Product(models.Model):
     class Meta:
         verbose_name = "محصول"
@@ -134,6 +175,11 @@ class Product(models.Model):
         related_name='product_discounts',
         verbose_name='تخفیف ها'
     )
+    categories = models.ManyToManyField(
+        Categories,
+        related_name="product_categories",
+        verbose_name="دسته ها"
+    )
     show_in_index = models.BooleanField(
         default=False,
         verbose_name="نمایش در صفحه اصلی سایت"
@@ -162,7 +208,7 @@ class Picture(models.Model):
     )
 
     def __str__(self):
-        return self.picture.url
+        return str(self.pk)
 
     def get_image_tag(self):
         return mark_safe('<img src="/media/%s"  width="150" />' % self.picture)

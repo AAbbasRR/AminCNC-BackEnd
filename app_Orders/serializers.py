@@ -1,12 +1,15 @@
-import json
-from jalali_date import datetime2jalali
+from django.utils.translation import gettext_lazy as _
 
 from rest_framework import serializers, exceptions
 
 from app_Product.models import MaterialModel, Product
-from app_User.utils import Redis
+from app_History.models import PaymentHistory
+from app_User.utils import Redis, Manage_Payment_Portal
 
 from .models import Orders, Delivery_mode, Address, ProductsModel
+
+from jalali_date import datetime2jalali
+import json
 
 
 class AddProductSerializer(serializers.Serializer):
@@ -84,6 +87,10 @@ class AddProductSerializer(serializers.Serializer):
 
 
 class SubmitOrderSerializer(serializers.Serializer):
+    default_error_messages = {
+        "error_when_create_link_payment": _("مشکل در سیستم درگاه پرداخت")
+    }
+
     products = serializers.ListSerializer(
         child=AddProductSerializer(),
         required=True,
@@ -116,7 +123,7 @@ class SubmitOrderSerializer(serializers.Serializer):
         user = self.context.get("request").user
         address_obj = Address.objects.filter(pk=value).first()
         if address_obj is None or address_obj.user != user:
-            return exceptions.NotFound({
+            raise exceptions.NotFound({
                 "address_id": "آیدی آدرس ارسال پیدا نشد"
             })
         return value
@@ -124,7 +131,7 @@ class SubmitOrderSerializer(serializers.Serializer):
     def validate_delivery_mode_id(self, value):
         delivery_obj = Delivery_mode.objects.filter(pk=value).first()
         if delivery_obj is None:
-            return exceptions.NotFound({
+            raise exceptions.NotFound({
                 "delivery_id": "آیدی نوع ارسال پیدا نشد"
             })
         return {
@@ -149,14 +156,78 @@ class SubmitOrderSerializer(serializers.Serializer):
             'total_price': total_price,
         })
 
-        redis_management = Redis(user.mobile_number, 'order_cart')
+        payment_management_obj = Manage_Payment_Portal()
+        link = payment_management_obj.create_payment_link(total_price, f"ثبت سفارش کاربر {user.mobile_number} به مبلغ {total_price}")
+        if link is None:
+            raise exceptions.ParseError(
+                self.error_messages['error_when_create_link_payment'], 'error_when_create_link_payment'
+            )
+        redis_management = Redis(user.mobile_number, f"order_cart_{link['auth_token']}")
         redis_management.set_value(json.dumps(dict(attrs)))
         redis_management.set_expire(1200)
-        return attrs
+
+        return link['link']
+
+
+class CheckPaymentFactorOrderSerializer(serializers.Serializer):
+    status = serializers.CharField(
+        max_length=3,
+        required=True,
+        error_messages={
+            "required": "ارسال وضعیت پرداخت درگاه پرداخت اجباری است",
+        }
+    )
+    authority = serializers.CharField(
+        max_length=40,
+        required=True,
+        error_messages={
+            "required": "ارسال شناسه یکتا درگاه پرداخت اجباری است"
+        }
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(CheckPaymentFactorOrderSerializer, self).__init__(*args, **kwargs)
+        self.order_detail = None
+        self.user = None
+        self.authority = None
+
+    def validate_status(self, value):
+        if value.upper() == "OK":
+            return value.upper()
+        elif value.upper() == "NOK":
+            return exceptions.ValidationError("تراکنش ناموفق")
+        else:
+            return exceptions.ParseError("مقدار ورودی وضعیت، نامعتبر")
+
+    def validate_authority(self, value):
+        self.user = self.context.get("request").user
+        redis_management = Redis(self.user.mobile_number, f"order_cart_{value}")
+        try:
+            order_detail = json.loads(redis_management.get_value())
+            if order_detail is not None:
+                self.order_detail = order_detail
+                return value
+        except TypeError:
+            raise exceptions.ValidationError("پرداخت ناموفق، اتمام زمان ثبت سفارش، لطفا مجددا سعی کنید")
+
+    def validate(self, attrs):
+        if self.order_detail is not None:
+            payment_management_obj = Manage_Payment_Portal()
+            ref_id = payment_management_obj.verify_payment_status(self.order_detail['total_price'], attrs['authority'])
+            if ref_id is not None:
+                self.authority = attrs['authority']
+                return {
+                    "order_detail": self.order_detail,
+                    "ref_id": str(ref_id)
+                }
+            else:
+                raise exceptions.ValidationError("مشکل در تایید از سمت درگاه پرداخت")
+        return True
 
     def create(self, validated_data):
-        products = validated_data.pop("products")
-        order_obj = Orders.objects.create(**validated_data)
+        order_detail = validated_data['order_detail']
+        products = order_detail.pop("products")
+        order_obj = Orders.objects.create(**order_detail)
         for product in products:
             ProductsModel.objects.create(
                 order=order_obj,
@@ -166,7 +237,20 @@ class SubmitOrderSerializer(serializers.Serializer):
                 discount_price=product['discount_price'],
                 number=product['number']
             )
-        return order_obj
+        PaymentHistory.objects.create(
+            user=self.user,
+            order=order_obj,
+            price=order_detail['total_price'],
+            status="SUC",
+            ref_id=validated_data['ref_id']
+        )
+        redis_management = Redis(self.user.mobile_number, f"order_cart_{self.authority}")
+        redis_management.delete()
+        return {
+            "total_price": order_detail['total_price'],
+            "ref_id": validated_data['ref_id'],
+            "order_tracking_code": order_obj.tracking_code
+        }
 
 
 class EditDescriptionOrderSerializer(serializers.ModelSerializer):

@@ -2,6 +2,7 @@ from amincnc import settings
 
 import random
 import redis
+import json
 import requests
 
 
@@ -111,3 +112,47 @@ class Manage_SMS_Portal:
         else:
             print(request_response)
             return False
+
+
+class Manage_Payment_Portal:
+    def __init__(self, portal_name="zarinpal"):
+        self.portal = portal_name
+
+        self.links = {
+            "create_link": "https://api.zarinpal.com/pg/v4/payment/request.json",
+            "verify_payment": "https://api.zarinpal.com/pg/v4/payment/verify.json"
+        }
+
+    def create_payment_link(self, price, description):
+        result = requests.post(
+            url=self.links['create_link'],
+            data={
+                "merchant_id": settings.ZARINPAL_PORTAL['authID'],
+                "amount": int(price) * 10,
+                "description": description,
+                "callback_url": f'{settings.FRONT_SITE_DOMAIN}/paymentStatus/zarinpal'
+            }
+        )
+        response_data = json.loads(result.content)['data']
+        if response_data['code'] == 100:
+            return {
+                "link": f"https://www.zarinpal.com/pg/StartPay/{response_data['authority']}",
+                "auth_token": response_data['authority']
+            }
+        return None
+
+    def verify_payment_status(self, price, auth_token):
+        result = requests.post(
+            url=self.links['verify_payment'],
+            data={
+                "merchant_id": settings.ZARINPAL_PORTAL['authID'],
+                "authority": auth_token,
+                "amount": int(price) * 10
+            }
+        )
+        response_data = json.loads(result.content)['data']
+        try:
+            if response_data['code'] == 100:
+                return response_data['ref_id']
+        except TypeError:
+            return None

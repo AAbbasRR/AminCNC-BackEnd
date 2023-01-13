@@ -5,7 +5,7 @@ from jalali_date.admin import ModelAdminJalaliMixin
 
 from app_Settings.admin import admin_site
 
-from .models import Discount, Delivery_mode, Product, Picture, MaterialModel, ProductPreparationTime
+from .models import Discount, Delivery_mode, Categories, Product, Picture, MaterialModel, ProductPreparationTime
 from .forms import ProductChangeForm
 
 
@@ -33,7 +33,7 @@ class ProductAdmin(ModelAdminJalaliMixin, admin.ModelAdmin):
             'fields': ('short_description', 'description')
         }),
         ('تنظیمات', {
-            'fields': ('discounts', 'preparation_time')
+            'fields': ('discounts', 'categories', 'preparation_time')
         })
     ]
     list_display = (
@@ -57,7 +57,7 @@ class ProductAdmin(ModelAdminJalaliMixin, admin.ModelAdmin):
     get_jalali_created_date.short_description = 'تاریخ ایجاد'
 
     def product_picture(self, obj):
-        return obj.product_image.first().get_image_tag()
+        return obj.product_image.first().get_image_tag() if obj.product_image.exists() else "خالی"
 
     product_picture.short_description = 'عکس شاخص'
     product_picture.allow_tags = True
@@ -81,6 +81,22 @@ class DiscountAdmin(admin.ModelAdmin):
         model = Discount
 
 
+class CategoriesAdmin(admin.ModelAdmin):
+    change_form_template = 'admin/change_form.html'
+    list_display = (
+        'name',
+        'slug',
+        'location'
+    )
+    search_fields = (
+        'name',
+        'slug',
+    )
+
+    class Meta:
+        model = Categories
+
+
 class DeliveryAdmin(admin.ModelAdmin):
     change_form_template = 'admin/change_form.html'
     list_display = (
@@ -98,5 +114,6 @@ class DeliveryAdmin(admin.ModelAdmin):
 
 admin_site.register(Product, ProductAdmin)
 admin_site.register(Discount, DiscountAdmin)
+admin_site.register(Categories, CategoriesAdmin)
 admin_site.register(Delivery_mode, DeliveryAdmin)
 admin_site.register(ProductPreparationTime)
