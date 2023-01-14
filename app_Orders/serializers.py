@@ -5,6 +5,7 @@ from rest_framework import serializers, exceptions
 from app_Product.models import MaterialModel, Product
 from app_History.models import PaymentHistory
 from app_User.utils import Redis, Manage_Payment_Portal
+from amincnc.settings import DEBUG
 
 from .models import Orders, Delivery_mode, Address, ProductsModel
 
@@ -277,7 +278,7 @@ class SingleProductSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         host = request.get_host()
         protocol = request.build_absolute_uri().split(host)[0]
-        protocol = protocol.replace("http", "http") if protocol.split(":")[0] == "http" else protocol
+        protocol = protocol if DEBUG else protocol.replace("http", "https") if protocol.split(":")[0] == "http" else protocol
         website_url = protocol + host
         return website_url + image.picture.url
 

@@ -2,6 +2,8 @@ from django.db.models import Min
 
 from rest_framework import serializers
 
+from amincnc.settings import DEBUG
+
 from .models import Discount, Categories, Product, MaterialModel, Picture, Delivery_mode, ProductPreparationTime
 
 
@@ -72,7 +74,7 @@ class PictureSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         host = request.get_host()
         protocol = request.build_absolute_uri().split(host)[0]
-        protocol = protocol.replace("http", "http") if protocol.split(":")[0] == "http" else protocol
+        protocol = protocol if DEBUG else protocol.replace("http", "https") if protocol.split(":")[0] == "http" else protocol
         website_url = protocol + host
         return website_url + obj.picture.url
 
@@ -145,7 +147,7 @@ class ProductSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         host = request.get_host()
         protocol = request.build_absolute_uri().split(host)[0]
-        protocol = protocol.replace("http", "http") if protocol.split(":")[0] == "http" else protocol
+        protocol = protocol if DEBUG else protocol.replace("http", "https") if protocol.split(":")[0] == "http" else protocol
         website_url = protocol + host
         return website_url + image.picture.url
 
